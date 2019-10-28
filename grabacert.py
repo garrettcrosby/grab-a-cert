@@ -1,6 +1,5 @@
 import requests
-import ssl
-import ConfigParser
+import configparser
 from datetime import datetime, timedelta
 from subprocess import call
 from cryptography import x509
@@ -8,7 +7,7 @@ from cryptography import x509
 def get_rootCA(vault_server):
     request_url = 'https://{0}/v1/pki/ca/pem'.format(vault_server)
     r = requests.get(request_url, verify=False)
-    root_ca_path = /etc/pki/ca-trust/source/anchors/privatesharp.crt
+    root_ca_path = '/etc/pki/ca-trust/source/anchors/privatesharp.crt'
     try:
         with open(root_ca_path, 'w') as f:
             f.write(r.text)
@@ -27,7 +26,7 @@ def install_cert(response, cert_path, key_path):
     data = response['data']
     cert = data['certificate']
     key = data['private_key']
-    with open (cert_path, 'w') ad f:
+    with open (cert_path, 'w') as f:
         f.write(cert)
     with open (key_path, 'w') as f:
         f.write(key)
@@ -51,7 +50,7 @@ def check_cert(cert_path):
 def main():
 
     #declare variables. These are read from ini file
-    Config = ConfigParser.ConfigParser()
+    Config = configpcd arser.ConfigParser()
     Config.read('config.ini')
     vault_server = Config.get('config', 'vault_server')
     token = Config.get('config', 'token')
