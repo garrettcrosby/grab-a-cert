@@ -50,7 +50,7 @@ def check_cert(cert_path):
 def main():
 
     #declare variables. These are read from ini file
-    Config = configpcd arser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read('config.ini')
     vault_server = Config.get('config', 'vault_server')
     token = Config.get('config', 'token')
