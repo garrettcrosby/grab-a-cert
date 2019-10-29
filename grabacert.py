@@ -1,6 +1,6 @@
 import requests
 import ssl
-import ConfigParser
+import configparser
 from datetime import datetime, timedelta
 from subprocess import call
 from cryptography import x509
@@ -10,13 +10,16 @@ def get_rootCA(vault_server, int_ca):
     request_int = 'https://{0}/v1/pki/cert/{1}'.format(vault_server, int_ca)
     r = requests.get(request_ca, verify=False)
     r2 = requests.get(request_int, verify=False)
-    root_ca_path = /etc/pki/ca-trust/source/anchors/privatesharp.crt
-    int_ca_path = /etc/pki/ca-trust/source/anchors/privatesharp_int.crt
+    #get the int certificate from the server response
+    response_json = r2.json()
+    int_ca_txt = r2['data']['certificate']
+    root_ca_path = '/etc/pki/ca-trust/source/anchors/privatesharp.crt'
+    int_ca_path = '/etc/pki/ca-trust/source/anchors/privatesharp_int.crt'
     try:
         with open(root_ca_path, 'w') as f:
             f.write(r.text)
         with open(int_ca_path, 'w') as f:
-            f.write(r2.text)
+            f.write(int_ca_txt)
         call('update-ca-trust')
         Config.set('config', 'has_root', 'True')
     except Exception as e: print(e)
@@ -31,7 +34,7 @@ def install_cert(response, cert_path, key_path):
     data = response['data']
     cert = data['certificate']
     key = data['private_key']
-    with open (cert_path, 'w') ad f:
+    with open (cert_path, 'w') as f:
         f.write(cert)
     with open (key_path, 'w') as f:
         f.write(key)
@@ -55,7 +58,7 @@ def check_cert(cert_path):
 def main():
 
     #declare variables. These are read from ini file
-    Config = ConfigParser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read('config.ini')
     vault_server = Config.get('config', 'vault_server')
     int_ca = Config.get('config', 'intermediate_sn')
