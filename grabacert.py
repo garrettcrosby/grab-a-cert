@@ -1,10 +1,10 @@
-import Paths
 import requests
 import ssl
 import configparser
 from datetime import datetime, timedelta
 from subprocess import call
 from cryptography import x509
+from os import path
 
 def get_rootCA(vault_server, int_ca):
     request_ca = 'https://{0}/v1/pki/ca/pem'.format(vault_server)
@@ -25,9 +25,10 @@ def get_rootCA(vault_server, int_ca):
     except Exception as e: print(e)
 
 def grab_cert(vault_server, token, cn, ttl):
-    request_url = 'https://{0}/v1/pki_int/issue/privatesharp-dot-com'
-    data = '{"common_name": "{0}", "ttl": "{1}"]'.format(cn, ttl)
-    r = requests.post(request_url, headers = {'X-Vault-Token': token}, data=data)
+    request_url = 'https://{0}/v1/pki_int/issue/privatesharp-dot-com'.format(vault_server)
+    verify = '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem'
+    data = '{{"common_name": "{0}", "ttl": "{1}"}}'.format(cn, ttl)
+    r = requests.post(request_url, headers = {'X-Vault-Token': token}, data=str(data), verify=verify)
     return r.json()
 
 def install_cert(response, cert_path, key_path):
@@ -40,7 +41,7 @@ def install_cert(response, cert_path, key_path):
         f.write(key)
 
 def hook(cmd):
-    call(cmd)
+    call(cmd, shell=True)
 
 def check_cert(cert_path):
     with open(cert_path, 'r') as f:
@@ -76,11 +77,11 @@ def main():
         Config.set('config', 'has_root', 'True')
 
     #check validity of cert
-    if Path.exists(cert_path):
+    if path.exists(cert_path):
         if check_cert(cert_path) == False:
         #False means the cert has not passed the threshold for a renewal
         #so we will exit
-        exit()
+            exit()
     else:
         #A return of true means that 75% of the cert's validity period has passed
         #Let's go ahead and grab a new one
