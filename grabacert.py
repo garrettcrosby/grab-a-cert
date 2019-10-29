@@ -1,9 +1,9 @@
 import requests
-import ssl
 import configparser
 from datetime import datetime, timedelta
 from subprocess import call
 from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 from os import path
 
 def get_rootCA(vault_server, int_ca):
@@ -46,9 +46,10 @@ def hook(cmd):
 def check_cert(cert_path):
     with open(cert_path, 'r') as f:
         cert = f.read().encode('ascii')
+    cert_decode = x509.load_pem_x509_certificate(cert, default_backend())
     now = datetime.now()
-    valid_start = cert.not_valid_before
-    valid_end = cert.not_valid_after
+    valid_start = cert_decode.not_valid_before
+    valid_end = cert_decode.not_valid_after
     validity_time = abs(valid_end - valid_start)
     elapsed_time = abs(now - valid_start)
     if elapsed_time / validity_time > .75:
@@ -82,13 +83,13 @@ def main():
         #False means the cert has not passed the threshold for a renewal
         #so we will exit
             exit()
-    else:
+        else:
         #A return of true means that 75% of the cert's validity period has passed
         #Let's go ahead and grab a new one
-        cert = grab_cert(vault_server, token, cn, ttl)
-        install_cert(cert, cert_path, key_path)
-        if cmd != "":
-            hook(cmd)
+            cert = grab_cert(vault_server, token, cn, ttl)
+            install_cert(cert, cert_path, key_path)
+            if cmd != "":
+                hook(cmd)
 
 if __name__ == '__main__':
     main()
