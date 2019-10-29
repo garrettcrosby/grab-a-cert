@@ -1,3 +1,4 @@
+import Paths
 import requests
 import ssl
 import configparser
@@ -12,7 +13,7 @@ def get_rootCA(vault_server, int_ca):
     r2 = requests.get(request_int, verify=False)
     #get the int certificate from the server response
     response_json = r2.json()
-    int_ca_txt = r2['data']['certificate']
+    int_ca_txt = response_json['data']['certificate']
     root_ca_path = '/etc/pki/ca-trust/source/anchors/privatesharp.crt'
     int_ca_path = '/etc/pki/ca-trust/source/anchors/privatesharp_int.crt'
     try:
@@ -21,7 +22,6 @@ def get_rootCA(vault_server, int_ca):
         with open(int_ca_path, 'w') as f:
             f.write(int_ca_txt)
         call('update-ca-trust')
-        Config.set('config', 'has_root', 'True')
     except Exception as e: print(e)
 
 def grab_cert(vault_server, token, cn, ttl):
@@ -73,9 +73,11 @@ def main():
     #check for prescence of root_ca, get it if needed
     if has_root != 'True':
         get_rootCA(vault_server, int_ca)
+        Config.set('config', 'has_root', 'True')
 
     #check validity of cert
-    if check_cert(cert_path) == False:
+    if Path.exists(cert_path):
+        if check_cert(cert_path) == False:
         #False means the cert has not passed the threshold for a renewal
         #so we will exit
         exit()
