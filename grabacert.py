@@ -88,9 +88,8 @@ def main():
     #set up logging to syslog server
     syslog = logging.getLogger('syslog')
     syslog.setLevel(logging.DEBUG)
-    syslog_handler = logging.handlers.SyslogHandler(
+    syslog_handler = logging.handlers.SysLogHandler(
                      address=(syslog_server, syslog_port), 
-                     facility=LOG_NEWS,
                      socktype=socket.SOCK_STREAM)
     syslog.addHandler(syslog_handler)
     
