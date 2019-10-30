@@ -83,14 +83,14 @@ def main():
     has_root = Config.get('config', 'has_root')
     cmd = Config.get('config', 'cmd')
     syslog_server = Config.get('config', 'syslog')
-    syslog_port = Config.get('config', 'syslog_port')
+    syslog_port = int(Config.get('config', 'syslog_port'))
 
     #set up logging to syslog server
     syslog = logging.getLogger('syslog')
     syslog.setLevel(logging.DEBUG)
     syslog_handler = logging.handlers.SysLogHandler(
                      address=(syslog_server, syslog_port), 
-                     socktype=socket.SOCK_STREAM)
+                     socktype=socket.SOCK_DGRAM)
     syslog.addHandler(syslog_handler)
     
     #check for prescence of root_ca, get it if needed
