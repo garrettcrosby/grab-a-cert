@@ -102,6 +102,7 @@ def main():
 
     #check validity of cert
     if path.exists(cert_path):
+        syslog.info('grabacert is checking the cert on {0}'.format(cn))
         if check_cert(cert_path) == False:
         #False means the cert has not passed the threshold for a renewal
         #so we will exit
