@@ -10,6 +10,13 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from os import path
 
+def login(role, secret, vault_server, ca):
+    auth_url = 'https://{0}/v1/auth/approle/login'.format(vault_server)
+    payload = '{{"role_id": "{0}", "secret_id": "{1}"}}'.format(role, secret)
+    r = requests.post(auth_url, data=payload, verify=ca)
+    response = r.json()
+    return response['auth']['client_token']
+
 def get_rootCA(vault_server, int_ca, cn, logger):
     request_ca = 'https://{0}/v1/pki/ca/pem'.format(vault_server)
     request_int = 'https://{0}/v1/pki/cert/{1}'.format(vault_server, int_ca)
@@ -29,11 +36,10 @@ def get_rootCA(vault_server, int_ca, cn, logger):
     except:
         logger.error('failed to install root or int CA on {0}'.format(cn))
 
-def grab_cert(vault_server, token, cn, ttl):
+def grab_cert(vault_server, token, cn, ttl, ca):
     request_url = 'https://{0}/v1/pki_int/issue/privatesharp-dot-com'.format(vault_server)
-    verify = '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem'
     data = '{{"common_name": "{0}", "ttl": "{1}"}}'.format(cn, ttl)
-    r = requests.post(request_url, headers = {'X-Vault-Token': token}, data=str(data), verify=verify)
+    r = requests.post(request_url, headers = {'X-Vault-Token': token}, data=str(data), verify=ca)
     return r.json()
 
 def install_cert(response, cert_path, key_path, cn, logger):
@@ -83,7 +89,6 @@ def main(argv):
     Config.read(config_file)
     vault_server = Config.get('config', 'vault_server')
     int_ca = Config.get('config', 'intermediate_sn')
-    token = Config.get('config', 'token')
     cert_path = Config.get('config', 'cert_path')
     key_path = Config.get('config', 'key_path')
     cn = Config.get('config', 'common_name')
@@ -92,6 +97,10 @@ def main(argv):
     cmd = Config.get('config', 'cmd')
     syslog_server = Config.get('config', 'syslog')
     syslog_port = int(Config.get('config', 'syslog_port'))
+    #path to cert bundle on centos, so python will trust vault
+    ca = '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem'
+    role = Config.get('config', 'role_id')
+    secret = Config.get('config', 'secret_id')
 
     #set up logging to syslog server
     syslog = logging.getLogger('syslog')
@@ -107,7 +116,14 @@ def main(argv):
         syslog.warning('grabacert is installing rootCA on {0}'.format(cn))
         get_rootCA(vault_server, int_ca, cn, syslog)
         Config.set('config', 'has_root', 'True')
-
+    
+    #now we authenticate to vault server and get a service token
+    try:
+        token = login(role, secret, vault_server, ca)
+        syslog.info('grabacert logged into vault on {0}'.format(cn))
+    except:
+        syslog.error('grabacert failed to log into vault on {0}'.format(cn))
+ 
     #check validity of cert
     if path.exists(cert_path):
         syslog.info('grabacert is checking the cert on {0}'.format(cn))
@@ -120,7 +136,7 @@ def main(argv):
         #A return of true means that 75% of the cert's validity period has passed
         #Let's go ahead and grab a new one
             syslog.warning('renewing cert for {0}'.format(cn))
-            cert = grab_cert(vault_server, token, cn, ttl)
+            cert = grab_cert(vault_server, token, cn, ttl, verify)
             install_cert(cert, cert_path, key_path, cn, syslog)
             if cmd != "":
                 hook(cmd, syslog)
