@@ -10,7 +10,7 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from os import path
 
-def get_rootCA(vault_server, int_ca, cn):
+def get_rootCA(vault_server, int_ca, cn, logger):
     request_ca = 'https://{0}/v1/pki/ca/pem'.format(vault_server)
     request_int = 'https://{0}/v1/pki/cert/{1}'.format(vault_server, int_ca)
     r = requests.get(request_ca, verify=False)
@@ -27,7 +27,7 @@ def get_rootCA(vault_server, int_ca, cn):
             f.write(int_ca_txt)
         call('update-ca-trust')
     except:
-        syslog.error('failed to install root or int CA on {0}'.format(cn))
+        logger.error('failed to install root or int CA on {0}'.format(cn))
 
 def grab_cert(vault_server, token, cn, ttl):
     request_url = 'https://{0}/v1/pki_int/issue/privatesharp-dot-com'.format(vault_server)
@@ -36,7 +36,7 @@ def grab_cert(vault_server, token, cn, ttl):
     r = requests.post(request_url, headers = {'X-Vault-Token': token}, data=str(data), verify=verify)
     return r.json()
 
-def install_cert(response, cert_path, key_path, cn):
+def install_cert(response, cert_path, key_path, cn, logger):
     data = response['data']
     cert = data['certificate']
     key = data['private_key']
@@ -45,15 +45,15 @@ def install_cert(response, cert_path, key_path, cn):
             f.write(cert)
         with open (key_path, 'w') as f:
             f.write(key)
-        syslog.info('cert and key installed on {0}'.format(cn))
+        logger.info('cert and key installed on {0}'.format(cn))
     except:
-        syslog.critical('failed to install cert or key on {0}'.format(cn))
+        logger.critical('failed to install cert or key on {0}'.format(cn))
 
-def hook(cmd):
+def hook(cmd, logger):
     try:
         call(cmd, shell=True)
     except:
-        syslog.error('grabacert could not restart services on {0}'.format(cn))
+        logger.error('grabacert could not restart services on {0}'.format(cn))
 
 def check_cert(cert_path):
     with open(cert_path, 'r') as f:
@@ -69,11 +69,18 @@ def check_cert(cert_path):
     else:
         return False
 
-def main():
+def main(argv):
     
+    if len(argv) > 1:
+        print('You suck at life.\n' 
+              'You cant even enter args correctly you troglodyte scum.\n'
+              'You should rethink your life choices.\n'
+              'Really. Get out of here. /RANT OVER\n')
+        exit()
+    config_file = argv[0]
     #declare variables. These are read from ini file
     Config = configparser.ConfigParser()
-    Config.read('config.ini')
+    Config.read(config_file)
     vault_server = Config.get('config', 'vault_server')
     int_ca = Config.get('config', 'intermediate_sn')
     token = Config.get('config', 'token')
@@ -98,7 +105,7 @@ def main():
     syslog.info('grabacert is checking for the rootCA on {0}'.format(cn))
     if has_root != 'True':
         syslog.warning('grabacert is installing rootCA on {0}'.format(cn))
-        get_rootCA(vault_server, int_ca, cn)
+        get_rootCA(vault_server, int_ca, cn, syslog)
         Config.set('config', 'has_root', 'True')
 
     #check validity of cert
@@ -114,9 +121,9 @@ def main():
         #Let's go ahead and grab a new one
             syslog.warning('renewing cert for {0}'.format(cn))
             cert = grab_cert(vault_server, token, cn, ttl)
-            install_cert(cert, cert_path, key_path, cn)
+            install_cert(cert, cert_path, key_path, cn, syslog)
             if cmd != "":
-                hook(cmd)
+                hook(cmd, syslog)
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
