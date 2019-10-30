@@ -1,3 +1,4 @@
+import sys
 import requests
 import configparser
 import logging
@@ -107,7 +108,7 @@ def main():
         #False means the cert has not passed the threshold for a renewal
         #so we will exit
             syslog.info('cert is good on {0}'.format(cn))
-            exit()
+            sys.exit()
         else:
         #A return of true means that 75% of the cert's validity period has passed
         #Let's go ahead and grab a new one
