@@ -140,7 +140,7 @@ def main(argv):
             install_cert(cert, cert_path, key_path, cn, syslog)
             if cmd != "":
                 hook(cmd, syslog)
-   else:
+    else:
         syslog.warning('getting cert for {0}'.format(cn))
         cert = grab_cert(vault_server, token, cn, ttl, ca)
         install_cert(cert, cert_path, key_path, cn, syslog)
