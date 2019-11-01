@@ -136,16 +136,16 @@ def main(argv):
         #A return of true means that 75% of the cert's validity period has passed
         #Let's go ahead and grab a new one
             syslog.warning('renewing cert for {0}'.format(cn))
-            cert = grab_cert(vault_server, token, cn, ttl, verify)
+            cert = grab_cert(vault_server, token, cn, ttl, ca)
             install_cert(cert, cert_path, key_path, cn, syslog)
             if cmd != "":
                 hook(cmd, syslog)
-       else:
-            syslog.warning('getting cert for {0}'.format(cn))
-            cert = grab_cert(vault_server, token, cn, ttl, verify)
-            install_cert(cert, cert_path, key_path, cn, syslog)
-            if cmd != "":
-                hook(cmd, syslog)
+   else:
+        syslog.warning('getting cert for {0}'.format(cn))
+        cert = grab_cert(vault_server, token, cn, ttl, ca)
+        install_cert(cert, cert_path, key_path, cn, syslog)
+        if cmd != "":
+            hook(cmd, syslog)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
