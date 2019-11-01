@@ -35,7 +35,7 @@ def get_rootCA(vault_server, int_ca, cn, logger):
         call('update-ca-trust')
     except:
         logger.error('failed to install root or int CA on {0}'.format(cn))
-
+        
 def grab_cert(vault_server, token, cn, ttl, ca):
     request_url = 'https://{0}/v1/pki_int/issue/privatesharp-dot-com'.format(vault_server)
     data = '{{"common_name": "{0}", "ttl": "{1}"}}'.format(cn, ttl)
@@ -136,6 +136,12 @@ def main(argv):
         #A return of true means that 75% of the cert's validity period has passed
         #Let's go ahead and grab a new one
             syslog.warning('renewing cert for {0}'.format(cn))
+            cert = grab_cert(vault_server, token, cn, ttl, verify)
+            install_cert(cert, cert_path, key_path, cn, syslog)
+            if cmd != "":
+                hook(cmd, syslog)
+       else:
+            syslog.warning('getting cert for {0}'.format(cn))
             cert = grab_cert(vault_server, token, cn, ttl, verify)
             install_cert(cert, cert_path, key_path, cn, syslog)
             if cmd != "":
