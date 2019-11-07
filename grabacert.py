@@ -1,3 +1,7 @@
+###############
+# version 3.2 #
+###############
+
 import sys
 import requests
 import configparser
@@ -116,6 +120,9 @@ def main(argv):
         syslog.warning('grabacert is installing rootCA on {0}'.format(cn))
         get_rootCA(vault_server, int_ca, cn, syslog)
         Config.set('config', 'has_root', 'True')
+        # write updated config values to file
+        with open(config_file, 'w') as f:
+            Config.write(f)
     
     #now we authenticate to vault server and get a service token
     try:
