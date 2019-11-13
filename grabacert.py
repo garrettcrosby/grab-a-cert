@@ -1,5 +1,5 @@
 #################
-# version 3.2.1 #
+# version 3.2.2 #
 #################
 
 import sys
@@ -61,6 +61,9 @@ def install_cert(response, cert_path, key_path, cn, logger):
 
 def hook(cmds, logger):
     for cmd in cmds:
+        #trim leading space, if present
+        if cmd[0] == ' ':
+            cmd = cmd[1:]
         try:
             call(cmd, shell=True)
         except:
