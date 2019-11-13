@@ -1,6 +1,6 @@
-###############
-# version 3.2 #
-###############
+#################
+# version 3.2.1 #
+#################
 
 import sys
 import requests
@@ -59,11 +59,13 @@ def install_cert(response, cert_path, key_path, cn, logger):
     except:
         logger.critical('failed to install cert or key on {0}'.format(cn))
 
-def hook(cmd, logger):
-    try:
-        call(cmd, shell=True)
-    except:
-        logger.error('grabacert could not restart services on {0}'.format(cn))
+def hook(cmds, logger):
+    for cmd in cmds:
+        try:
+            call(cmd, shell=True)
+        except:
+            logger.error('grabacert could not restart services on {0}'
+                         'error with {1}'.format(cn, cmd))
 
 def check_cert(cert_path):
     with open(cert_path, 'r') as f:
@@ -98,7 +100,7 @@ def main(argv):
     cn = Config.get('config', 'common_name')
     ttl = Config.get('config', 'ttl')
     has_root = Config.get('config', 'has_root')
-    cmd = Config.get('config', 'cmd')
+    cmds = Config.get('config', 'cmd').split(',')
     syslog_server = Config.get('config', 'syslog')
     syslog_port = int(Config.get('config', 'syslog_port'))
     #path to cert bundle on centos, so python will trust vault
@@ -145,7 +147,7 @@ def main(argv):
             syslog.warning('renewing cert for {0}'.format(cn))
             cert = grab_cert(vault_server, token, cn, ttl, ca)
             install_cert(cert, cert_path, key_path, cn, syslog)
-            if cmd != "":
+            if cmds[0] != "":
                 hook(cmd, syslog)
     else:
         syslog.warning('getting cert for {0}'.format(cn))
