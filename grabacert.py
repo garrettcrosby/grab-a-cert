@@ -91,7 +91,7 @@ def main(argv):
               'You cant even enter args correctly you troglodyte scum.\n'
               'You should rethink your life choices.\n'
               'Really. Get out of here. /RANT OVER\n')
-        exit()
+        sys.exit()
     config_file = argv[0]
     #declare variables. These are read from ini file
     Config = configparser.ConfigParser()
