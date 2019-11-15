@@ -1,6 +1,6 @@
-#################
-# version 3.2.2 #
-#################
+###############
+# version 3.3 #
+###############
 
 import sys
 import requests
@@ -151,7 +151,7 @@ def main(argv):
             cert = grab_cert(vault_server, token, cn, ttl, ca)
             install_cert(cert, cert_path, key_path, cn, syslog)
             if cmds[0] != "":
-                hook(cmd, syslog)
+                hook(cmds, syslog)
     else:
         syslog.warning('getting cert for {0}'.format(cn))
         cert = grab_cert(vault_server, token, cn, ttl, ca)
