@@ -1,6 +1,6 @@
-###############
-# version 3.3 #
-###############
+#################
+# version 3.3.1 #
+#################
 
 import sys
 import requests
@@ -59,16 +59,18 @@ def install_cert(response, cert_path, key_path, cn, logger):
     except:
         logger.critical('failed to install cert or key on {0}'.format(cn))
 
-def hook(cmds, logger):
+def hook(cmds, cn, logger):
     for cmd in cmds:
         #trim leading space, if present
         if cmd[0] == ' ':
             cmd = cmd[1:]
         try:
             call(cmd, shell=True)
+            logger.warning('grabacert ran the following command on {0}: '
+                           '"{1}"'.format(cn, cmd))
         except:
-            logger.error('grabacert could not restart services on {0}'
-                         'error with {1}'.format(cn, cmd))
+            logger.error('grabacert could not restart services on {0} '
+                         'error with "{1}"'.format(cn, cmd))
 
 def check_cert(cert_path):
     with open(cert_path, 'r') as f:
@@ -151,13 +153,13 @@ def main(argv):
             cert = grab_cert(vault_server, token, cn, ttl, ca)
             install_cert(cert, cert_path, key_path, cn, syslog)
             if cmds[0] != "":
-                hook(cmds, syslog)
+                hook(cmds, cn, syslog)
     else:
         syslog.warning('getting cert for {0}'.format(cn))
         cert = grab_cert(vault_server, token, cn, ttl, ca)
         install_cert(cert, cert_path, key_path, cn, syslog)
-        if cmd != "":
-            hook(cmd, syslog)
+        if cmds != "":
+            hook(cmds, cn, syslog)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
